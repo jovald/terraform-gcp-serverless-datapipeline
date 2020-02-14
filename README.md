@@ -1,6 +1,6 @@
-# Serverless data pipeline with Cloud Functions, Pub/Sub and BigQuery on GCP
+# Provisioning a Serverless data pipeline with Terraform in Google Cloud Platform
 
-This project aims to show how to implement a simple data pipeline on GCP using some of its serverless services: **Cloud Functions**, **Pub/Sub**, **Cloud Scheduler**, and **BigQuery**.
+This project aims to show how to provision a serverless infrastructure for data processing with Terraform in Google Cloud.
 
 ## Introduction
 
@@ -19,7 +19,6 @@ The process could be explained by the next steps:
 1. Depending on the frequency, a job of Cloud Scheduler triggers a topic on Cloud Pub/Sub.
 2. That action executes a Cloud Function (*loadDataIntoBigQuery*) that gets data from OpenWeatherMap.
 3. Then, this data is loaded into BigQuery.
-4. Finally, the data could be analyzed directly BigQuery or Data Studio.
 
 ### System requirements
 
@@ -30,6 +29,17 @@ The following is needed to deploy the services:
 3. Created an App Engine app in your project. [Why?](https://cloud.google.com/scheduler/docs/setup)
 4. Enabled the Cloud Functions, Cloud Scheduler, and APP Engine APIs
 5. An API Key from [OpenWeatherMap](https://openweathermap.org)
+6. Have installed [Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html)
+
+For pint 4, you can just create a project in GCP and run the `bootstrap.sh` file:
+
+```sh
+gcloud config set project <Your_Project_Name>
+./bootstrap.sh
+```
+
+This will enable all the needed APIs in GCP and will intent to create an empty App Engine app.
+
 
 ### Costs
 
@@ -46,106 +56,36 @@ This pipeline uses billable components of Google Cloud Platform, including:
 
 This section shows you how to deploy all the services needed to run the pipeline.
 
-### Setting up environment variables
+### Setting up variables
 
-Before continue, is preferable to set up some environment variables that will help you execute the *gcloud* commands smoothly.
+First you have to setup some variables. First, rename `terraform.tfvars.copy` to `terraform.tfvars` and fill the variables:
 
 ```sh
-export PROJECT_ID=<Your_Project_Id>
-
-# The topic name fo Pub/Sub.
-export TOPIC_NAME=<Your_Pub_Sub_Topic>
-
-# It must be unique in the project. Note that you cannot re-use a job name in a project even if you delete its associated job.
-export JOB_NAME=<Your_Cron_Scheduler_Job_Name>
-
-# The name of the function corresponds to the exported function name on index.js
-export FUNCTION_NAME="loadDataIntoBigQuery"
-
-# E.g., if you want a frequency of execution of 1 hour, the variable should be SCHEDULE_TIME="every 1 hour".
-export SCHEDULE_TIME=<Your_Cron_Schedule>
-
-# OpenWeatherMap API key
-export OPEN_WEATHER_MAP_API_KEY=<Your_Open_Weather_Map_Api_Key>
-
-# Consider that dataset names must be unique per project. Dataset IDs must be alphanumeric (plus underscores)
-export BQ_DATASET=<Your_BQ_Dataset_Name>
-
-#The table name must be unique per dataset.
-export BQ_TABLE=<Your_BQ_Table_Name>
+open_weather_map_api_key = "<OPEN_WEATHER_API>"
+project_id = "<YOUR_GCP_PROJECT_ID>"
 ```
 
-### 1. Activate the project
+### Provisioning the infrastructure
+
+Just use Terraform!
 
 ```sh
-gcloud config set project $PROJECT_ID
-```
-
-### 2. Create the Cloud Pub/Sub topic
-
-```sh
-gcloud pubsub topics create $TOPIC_NAME
-```
-
-### 3. Create the Cloud Scheduler job
-
-```sh
-gcloud scheduler jobs create pubsub $JOB_NAME --schedule="$SCHEDULE_TIME" --topic=$TOPIC_NAME --message-body="execute"
-```
-
-If you want to change the frequency of the execution, the following command will help:
-
-```sh
-gcloud scheduler jobs update pubsub $JOB_NAME --schedule="$SCHEDULE_TIME"
-```
-
-### 4. Create a BigQuery dataset
-
-```sh
-bq mk $BQ_DATASET
-```
-
-### 5. Create a BigQuery table
-
-```sh
-bq mk --table $PROJECT_ID:$BQ_DATASET.$BQ_TABLE
-```
-
-### 6. Deploy the Cloud Function
-
-```sh
-gcloud functions deploy $FUNCTION_NAME --trigger-topic $TOPIC_NAME --runtime nodejs10 --set-env-vars OPEN_WEATHER_MAP_API_KEY=$OPEN_WEATHER_MAP_API_KEY,BQ_DATASET=$BQ_DATASET,BQ_TABLE=$BQ_TABLE
+terraform apply
 ```
 
 ---
 
 ## What now
 
-I want to write this section only as an opinion and give ideas on how to end this pipeline as a real queen or king of data.
+Just query your table! (maybe, wait some minutes)
 
-Also, you have to consider that this particular stage depends totally on the data or insights you want to obtain. [Felipe Hoffa](https://medium.com/@hoffa) illustrates different use cases and ideas using BigQuery, you should read him on Medium!
-
-### Query your table
-
-Two options (clearly more).
-
-First, remember the env variables? they are still util. if you run the next command, a BigQuery job will be executed that consist of a query to count all the records on your table. If you complete the steps above correctly, you will see at least one record counted.
+If you run the next command, a BigQuery job will be executed that consist of a query to count all the records on your table. If you complete the steps above correctly, you will see at least one record counted. Remember to be logged with `gcloud`.
 
 ```sh
-bq query --nouse_legacy_sql "SELECT COUNT(*) FROM $BQ_DATASET.$BQ_TABLE"
+bq query --nouse_legacy_sql "SELECT COUNT(*) FROM <DATASET_ID>.<TABLE_ID>"
 ```
 
 Second, BigQuery on the GCP Console is also an enjoyable manner to explore and analyze your data.
-
-### Data Studio, the great finale
-
-Day to day, Google's technological ecosystem grows rapidly. This project is a small, but concise, proof of how completed could be an end to end data solution built into this ecosystem.
-
-Just to try (you should do it), I built a report on Data Studio and was a great and fast experience. In my opinion, the analytical power of BigQuery combined with its report/dashboard tool is the perfect double for small and big data end processes. Look at this report, just 20-30 minutes of learning by doing, connected directly to BigQuery!
-
-![Data Studio](https://raw.githubusercontent.com/jovald/gcp-serverless-data-pipeline/assets/data-studio-sample.png)
-
-*This is not propaganda, Google didn't pay me for this (unfortunately).*
 
 ---
 
@@ -153,9 +93,16 @@ Just to try (you should do it), I built a report on Data Studio and was a great 
 
 * **[Jose Valdebenito](https://github.com/jovald)**
 
+## Special thanks
+* **[Luis Santana](https://github.com/lsantana486)**
+* **[Chris Matteson](https://github.com/chrismatteson)**
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+## You may also like
+[terraform-gcp-serverless-datapipeline](https://github.com/jovald/terraform-gcp-serverless-datapipeline)
 
 ## Further readings
 
