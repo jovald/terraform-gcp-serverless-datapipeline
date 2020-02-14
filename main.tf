@@ -57,7 +57,7 @@ resource "google_bigquery_dataset" "bq_dataset" {
   location   = "US"
 }
 
-resource "google_bigquery_table" "default" {
+resource "google_bigquery_table" "bq_table" {
   dataset_id = google_bigquery_dataset.bq_dataset.dataset_id
   table_id   = var.gcp_bq_table_id
 }
@@ -79,6 +79,6 @@ resource "google_cloudfunctions_function" "crawl_function" {
     OPEN_WEATHER_MAP_API_KEY = var.open_weather_map_api_key
     OPEN_WEATHER_LOCATION    = var.open_weather_location
     BQ_DATASET               = google_bigquery_dataset.bq_dataset.dataset_id
-    BQ_TABLE                 = google_bigquery_table.default.table_id
+    BQ_TABLE                 = google_bigquery_table.bq_table.table_id
   }
 }
