@@ -75,9 +75,7 @@ terraform apply
 
 ---
 
-## What now
-
-Just query your table! (maybe, wait some minutes)
+## What's next
 
 If you run the next command, a BigQuery job will be executed that consist of a query to count all the records on your table. If you complete the steps above correctly, you will see at least one record counted. Remember to be logged with `gcloud`.
 

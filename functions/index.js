@@ -45,7 +45,7 @@ exports.loadDataIntoBigQuery = async () => {
       `https://api.openweathermap.org/data/2.5/weather?q=${openWeatherLocation}&APPID=${openWeatherMapApiKey}`
     );
 
-    // this key value pair ar enot necessary.
+    // this key value pair is not necessary.
     delete data.weather;
 
     // Flatten the json and add a timestamp to know the processing time.
